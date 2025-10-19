@@ -6,6 +6,7 @@ import 'src/pages/order_add_page.dart';
 import 'src/pages/order_detail_page.dart';
 import 'src/pages/user_page.dart';
 import 'src/pages/price_list_page.dart';
+import 'src/pages/home_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,7 +27,8 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: '/',
         routes: {
-          '/': (_) => const OrderListPage(),
+          '/': (_) => const HomePage(),
+          '/orders': (_) => const OrderListPage(),
           '/add': (_) => const OrderAddPage(),
           '/user': (_) => const UserPage(),
           '/prices': (_) => const PriceListPage(),
