@@ -8,6 +8,7 @@ import 'src/pages/user_page.dart';
 import 'src/pages/price_list_page.dart';
 import 'src/pages/home_page.dart';
 import 'src/pages/login_page.dart';
+import 'src/pages/register_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
           '/user': (_) => const UserPage(),
           '/prices': (_) => const PriceListPage(),
           '/login': (_) => const LoginPage(),
+          '/register': (_) => const RegisterPage(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/detail') {
