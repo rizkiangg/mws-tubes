@@ -11,9 +11,18 @@ class OrderAddPage extends StatefulWidget {
 
 class _OrderAddPageState extends State<OrderAddPage> {
   final _formKey = GlobalKey<FormState>();
-  String _title = '';
+  final TextEditingController _titleController = TextEditingController();
   String _desc = '';
   String _price = '';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is String && args.isNotEmpty) {
+      _titleController.text = args;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +37,10 @@ class _OrderAddPageState extends State<OrderAddPage> {
           child: Column(
             children: [
               TextFormField(
+                controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Nama pesanan'),
-                onSaved: (v) => _title = v ?? '',
+                onSaved: (v) =>
+                    _titleController.text = v ?? _titleController.text,
                 validator: (v) =>
                     (v == null || v.isEmpty) ? 'Masukkan nama' : null,
               ),
@@ -51,7 +62,7 @@ class _OrderAddPageState extends State<OrderAddPage> {
                   if (_formKey.currentState?.validate() ?? false) {
                     _formKey.currentState?.save();
                     provider.addOrder(
-                      title: _title,
+                      title: _titleController.text,
                       description: _desc,
                       price: double.parse(_price),
                     );

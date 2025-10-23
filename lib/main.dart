@@ -6,33 +6,47 @@ import 'src/pages/order_add_page.dart';
 import 'src/pages/order_detail_page.dart';
 import 'src/pages/user_page.dart';
 import 'src/pages/price_list_page.dart';
-import 'src/pages/home_page.dart';
+import 'src/pages/root_page.dart';
 import 'src/pages/login_page.dart';
 import 'src/pages/register_page.dart';
+import 'src/pages/order_history_page.dart';
+import 'src/pages/order_status_page.dart';
+import 'src/pages/profile_page.dart';
+import 'src/pages/settings_page.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final orderProvider = OrderProvider();
+  await orderProvider.restoreSession();
+  runApp(MyApp.withProvider(orderProvider: orderProvider));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final OrderProvider? orderProvider;
+  const MyApp({super.key}) : orderProvider = null;
+  MyApp.withProvider({super.key, required OrderProvider this.orderProvider});
 
   @override
   Widget build(BuildContext context) {
+    final providerValue = orderProvider ?? OrderProvider();
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => OrderProvider())],
+      providers: [ChangeNotifierProvider.value(value: providerValue)],
       child: MaterialApp(
         title: 'Tugas Besar',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
         ),
-        initialRoute: '/',
+        initialRoute: providerValue.currentUser == null ? '/login' : '/',
         routes: {
-          '/': (_) => const HomePage(),
+          '/': (_) => const RootPage(),
           '/orders': (_) => const OrderListPage(),
+          '/history': (_) => const OrderHistoryPage(),
+          '/status': (_) => const OrderStatusPage(),
           '/add': (_) => const OrderAddPage(),
           '/user': (_) => const UserPage(),
+          '/profile': (_) => const ProfilePage(),
+          '/settings': (_) => const SettingsPage(),
           '/prices': (_) => const PriceListPage(),
           '/login': (_) => const LoginPage(),
           '/register': (_) => const RegisterPage(),
@@ -44,6 +58,17 @@ class MyApp extends StatelessWidget {
               builder: (_) => OrderDetailPage(orderId: args),
             );
           }
+
+          if (settings.name == '/orders') {
+            final args = settings.arguments;
+            if (args is Map && args['readOnly'] == true) {
+              return MaterialPageRoute(
+                builder: (_) => const OrderListPage(readOnly: true),
+              );
+            }
+            return MaterialPageRoute(builder: (_) => const OrderListPage());
+          }
+
           return null;
         },
       ),

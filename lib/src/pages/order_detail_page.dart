@@ -5,7 +5,12 @@ import '../models/order.dart';
 
 class OrderDetailPage extends StatelessWidget {
   final String orderId;
-  const OrderDetailPage({super.key, required this.orderId});
+  final bool readOnly;
+  const OrderDetailPage({
+    super.key,
+    required this.orderId,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -41,19 +46,22 @@ class OrderDetailPage extends StatelessWidget {
                 return ChoiceChip(
                   label: Text(label),
                   selected: selected,
-                  onSelected: (_) => provider.updateStatus(order.id, s),
+                  onSelected: readOnly
+                      ? null
+                      : (_) => provider.updateStatus(order.id, s),
                 );
               }).toList(),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                provider.removeOrder(order.id);
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Hapus Pesanan'),
-            ),
+            if (!readOnly)
+              ElevatedButton(
+                onPressed: () {
+                  provider.removeOrder(order.id);
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Hapus Pesanan'),
+              ),
           ],
         ),
       ),

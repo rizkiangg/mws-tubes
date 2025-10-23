@@ -1,16 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/service_card.dart';
+import '../providers/order_provider.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String? _selectedService;
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+  String? _location;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
 
   Widget _pickButton(BuildContext context, String label, IconData icon) {
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: () async {
+        if (label.contains('Tanggal')) {
+          final d = await showDatePicker(
+            context: context,
+            initialDate: DateTime.now(),
+            firstDate: DateTime.now(),
+            lastDate: DateTime.now().add(const Duration(days: 365)),
+          );
+          if (d != null) setState(() => _selectedDate = d);
+        } else if (label.contains('Waktu')) {
+          final t = await showTimePicker(
+            context: context,
+            initialTime: TimeOfDay.now(),
+          );
+          if (t != null) setState(() => _selectedTime = t);
+        } else {
+          // simple location dialog
+          final loc = await showDialog<String>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Lokasi Penjemputan'),
+              content: TextFormField(
+                decoration: const InputDecoration(hintText: 'Masukkan alamat'),
+                onFieldSubmitted: (v) => Navigator.of(ctx).pop(v),
+              ),
+            ),
+          );
+          if (loc != null && loc.isNotEmpty) setState(() => _location = loc);
+        }
+      },
       icon: Icon(icon, color: Colors.blue),
-      label: Expanded(
-        child: Text(label, style: const TextStyle(color: Colors.black)),
-      ),
+      label: Text(label, style: const TextStyle(color: Colors.black)),
       style: OutlinedButton.styleFrom(
         backgroundColor: Colors.white,
         side: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -18,6 +60,47 @@ class HomePage extends StatelessWidget {
         alignment: Alignment.centerLeft,
       ),
     );
+  }
+
+  void _selectService(String label) {
+    setState(() {
+      _selectedService = label;
+      _titleController.text = label;
+    });
+  }
+
+  void _placeOrder() {
+    if (_titleController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Masukkan nama pesanan')));
+      return;
+    }
+    final provider = Provider.of<OrderProvider>(context, listen: false);
+    double price = 0;
+    if (provider.isAdmin) {
+      price = double.tryParse(_priceController.text) ?? 0;
+    } else {
+      price = provider.getPriceByName(_selectedService) ?? 0;
+    }
+    provider.addOrder(
+      title: _titleController.text,
+      description: _descController.text,
+      price: price,
+    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Pesanan dibuat')));
+    // clear form
+    setState(() {
+      _selectedService = null;
+      _selectedDate = null;
+      _selectedTime = null;
+      _location = null;
+      _titleController.clear();
+      _descController.clear();
+      _priceController.clear();
+    });
   }
 
   @override
@@ -41,7 +124,7 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.pushNamed(context, '/profile'),
                     icon: const Icon(Icons.person_outline),
                   ),
                 ],
@@ -82,22 +165,43 @@ class HomePage extends StatelessWidget {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
                 childAspectRatio: 0.95,
-                children: const [
+                children: [
                   ServiceCard(
                     label: 'Cuci Lipat',
                     icon: Icons.local_laundry_service,
+                    onTap: () => _selectService('Cuci Lipat'),
+                    selected: _selectedService == 'Cuci Lipat',
                   ),
-                  ServiceCard(label: 'Setrika', icon: Icons.iron),
+                  ServiceCard(
+                    label: 'Setrika',
+                    icon: Icons.iron,
+                    onTap: () => _selectService('Setrika'),
+                    selected: _selectedService == 'Setrika',
+                  ),
                   ServiceCard(
                     label: 'Laundry Kiloan',
                     icon: Icons.invert_colors,
+                    onTap: () => _selectService('Laundry Kiloan'),
+                    selected: _selectedService == 'Laundry Kiloan',
                   ),
                   ServiceCard(
                     label: 'Baby Care Laundry',
                     icon: Icons.child_care,
+                    onTap: () => _selectService('Baby Care Laundry'),
+                    selected: _selectedService == 'Baby Care Laundry',
                   ),
-                  ServiceCard(label: 'Karpet dan Gorden', icon: Icons.chair),
-                  ServiceCard(label: 'Selimut dan Bed Cover', icon: Icons.bed),
+                  ServiceCard(
+                    label: 'Karpet dan Gorden',
+                    icon: Icons.chair,
+                    onTap: () => _selectService('Karpet dan Gorden'),
+                    selected: _selectedService == 'Karpet dan Gorden',
+                  ),
+                  ServiceCard(
+                    label: 'Selimut dan Bed Cover',
+                    icon: Icons.bed,
+                    onTap: () => _selectService('Selimut dan Bed Cover'),
+                    selected: _selectedService == 'Selimut dan Bed Cover',
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -108,18 +212,65 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 10),
               _pickButton(
                 context,
-                'Pilih Tanggal Penjemputan',
+                _selectedDate == null
+                    ? 'Pilih Tanggal Penjemputan'
+                    : 'Tanggal: ${_selectedDate!.toLocal().toString().split(' ')[0]}',
                 Icons.calendar_month,
               ),
               const SizedBox(height: 8),
-              _pickButton(context, 'Pilih Waktu Penjemputan', Icons.schedule),
+              _pickButton(
+                context,
+                _selectedTime == null
+                    ? 'Pilih Waktu Penjemputan'
+                    : 'Waktu: ${_selectedTime!.format(context)}',
+                Icons.schedule,
+              ),
               const SizedBox(height: 8),
-              _pickButton(context, 'Masukkan Lokasi Penjemputan', Icons.place),
+              _pickButton(
+                context,
+                _location == null
+                    ? 'Masukkan Lokasi Penjemputan'
+                    : 'Lokasi: $_location',
+                Icons.place,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: 'Nama pesanan'),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _descController,
+                decoration: const InputDecoration(labelText: 'Deskripsi'),
+              ),
+              const SizedBox(height: 8),
+              // Price: editable only for admin; users see price fetched from provider
+              Consumer<OrderProvider>(
+                builder: (context, prov, _) {
+                  final price = prov.getPriceByName(_selectedService);
+                  if (prov.isAdmin) {
+                    return TextFormField(
+                      controller: _priceController,
+                      decoration: const InputDecoration(labelText: 'Harga'),
+                      keyboardType: TextInputType.number,
+                    );
+                  }
+                  return TextFormField(
+                    enabled: false,
+                    decoration: InputDecoration(
+                      labelText: 'Harga',
+                      hintText: price != null
+                          ? price.toStringAsFixed(0)
+                          : 'Pilih layanan untuk melihat harga',
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _placeOrder,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0B57D0),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -166,7 +317,11 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        '/detail',
+                        arguments: 'sample-id-001',
+                      ),
                       style: TextButton.styleFrom(
                         backgroundColor: const Color(0xFFE7F0FF),
                         padding: const EdgeInsets.symmetric(

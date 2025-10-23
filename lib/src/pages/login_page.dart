@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/order_provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,25 +14,36 @@ class _LoginPageState extends State<LoginPage> {
   String _username = '';
   String _password = '';
   bool _obscure = true;
+  bool _loading = false;
 
   void _login() {
     if (_formKey.currentState?.validate() ?? false) {
       _formKey.currentState?.save();
-      // TODO: Implement authentication logic
-      // reference _password in debug only to avoid analyzer unused-field warning
-      debugPrint(
-        'login: username=$_username, passwordLength=${_password.length}',
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login berhasil, selamat datang $_username!')),
-      );
-      Navigator.pushReplacementNamed(context, '/');
+      final prov = Provider.of<OrderProvider>(context, listen: false);
+      () async {
+        setState(() => _loading = true);
+        final ok = await prov.login(_username.trim(), _password);
+        if (!mounted) return;
+        setState(() => _loading = false);
+        if (ok) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login berhasil, selamat datang $_username!'),
+            ),
+          );
+          Navigator.pushReplacementNamed(context, '/');
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Login gagal')));
+        }
+      }();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // No automatic redirect here; navigation after successful login will handle routing.
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -93,6 +106,8 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
+                    if (_loading) const SizedBox(height: 12),
+                    if (_loading) const CircularProgressIndicator(),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

@@ -4,12 +4,14 @@ class ServiceCard extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback? onTap;
+  final bool selected;
 
   const ServiceCard({
     super.key,
     required this.label,
     required this.icon,
     this.onTap,
+    this.selected = false,
   });
 
   @override
@@ -19,8 +21,13 @@ class ServiceCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color.fromRGBO(33, 150, 243, 0.06),
+          color: selected
+              ? const Color.fromRGBO(11, 87, 208, 0.08)
+              : const Color.fromRGBO(33, 150, 243, 0.06),
           borderRadius: BorderRadius.circular(12),
+          border: selected
+              ? Border.all(color: const Color(0xFF0B57D0), width: 1.5)
+              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
