@@ -17,10 +17,15 @@ class _LoginPageState extends State<LoginPage> {
     if (_formKey.currentState?.validate() ?? false) {
       _formKey.currentState?.save();
       // TODO: Implement authentication logic
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Login berhasil!')));
-      // Navigator.pushReplacementNamed(context, '/');
+      // reference _password in debug only to avoid analyzer unused-field warning
+      debugPrint(
+        'login: username=$_username, passwordLength=${_password.length}',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login berhasil, selamat datang $_username!')),
+      );
+      Navigator.pushReplacementNamed(context, '/');
     }
   }
 
@@ -87,6 +92,18 @@ class _LoginPageState extends State<LoginPage> {
                           style: TextStyle(fontSize: 16),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Belum punya akun?'),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/register'),
+                          child: const Text('Daftar'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
