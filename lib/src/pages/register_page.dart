@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -10,6 +12,11 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   bool _obscure = true;
+  String _name = '';
+  String _email = '';
+  String _username = '';
+  String _password = '';
+  bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +43,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         labelText: 'Nama',
                         border: OutlineInputBorder(),
                       ),
+                      onSaved: (v) => _name = v ?? '',
                       validator: (v) =>
                           (v == null || v.isEmpty) ? 'Masukkan nama' : null,
                     ),
@@ -46,6 +54,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      onSaved: (v) => _email = v ?? '',
                       validator: (v) =>
                           (v == null || v.isEmpty) ? 'Masukkan email' : null,
                     ),
@@ -55,6 +64,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         labelText: 'Username',
                         border: OutlineInputBorder(),
                       ),
+                      onSaved: (v) => _username = v ?? '',
                       validator: (v) =>
                           (v == null || v.isEmpty) ? 'Masukkan username' : null,
                     ),
@@ -71,6 +81,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ),
                       obscureText: _obscure,
+                      onSaved: (v) => _password = v ?? '',
                       validator: (v) =>
                           (v == null || v.isEmpty) ? 'Masukkan password' : null,
                     ),
@@ -78,15 +89,60 @@ class _RegisterPageState extends State<RegisterPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (_formKey.currentState?.validate() ?? false) {
-                            // TODO: Implement registration logic
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Registrasi berhasil!'),
-                              ),
-                            );
-                            // Navigator.pushReplacementNamed(context, '/login');
+                            _formKey.currentState?.save();
+                            setState(() => _loading = true);
+                            // perform registration directly with SharedPreferences to avoid
+                            // using BuildContext across async gap
+                            final prefs = await SharedPreferences.getInstance();
+                            final usersJson = prefs.getString('users');
+                            Map<String, dynamic> users = {};
+                            if (usersJson != null) {
+                              try {
+                                users =
+                                    jsonDecode(usersJson)
+                                        as Map<String, dynamic>;
+                              } catch (_) {
+                                users = {};
+                              }
+                            }
+                            final uname = _username.trim();
+                            bool ok = false;
+                            if (!users.containsKey(uname)) {
+                              users[uname] = {
+                                'password': _password,
+                                'name': _name,
+                                'email': _email,
+                                'role': 'user',
+                              };
+                              await prefs.setString('users', jsonEncode(users));
+                              ok = true;
+                            }
+                            setState(() => _loading = false);
+                            if (!mounted) return;
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (!mounted) return;
+                              if (ok) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Registrasi berhasil! Silakan login.',
+                                    ),
+                                  ),
+                                );
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  '/login',
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Username sudah terpakai'),
+                                  ),
+                                );
+                              }
+                            });
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -96,10 +152,19 @@ class _RegisterPageState extends State<RegisterPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          'Register',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        child: _loading
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Register',
+                                style: TextStyle(fontSize: 16),
+                              ),
                       ),
                     ),
                   ],

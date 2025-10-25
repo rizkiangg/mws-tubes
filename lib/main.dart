@@ -24,7 +24,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   final OrderProvider? orderProvider;
   const MyApp({super.key}) : orderProvider = null;
-  MyApp.withProvider({super.key, required OrderProvider this.orderProvider});
+  const MyApp.withProvider({super.key, required OrderProvider this.orderProvider});
 
   @override
   Widget build(BuildContext context) {

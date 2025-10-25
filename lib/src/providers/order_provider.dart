@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../data/order_repository.dart';
 import '../models/order.dart';
 
@@ -26,12 +27,63 @@ class OrderProvider extends ChangeNotifier {
       _currentUser = 'user';
       _role = 'user';
     } else {
-      return false;
+      // check registered users in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final usersJson = prefs.getString('users');
+      if (usersJson != null) {
+        try {
+          final Map<String, dynamic> users = jsonDecode(usersJson);
+          if (users.containsKey(username)) {
+            final u = users[username] as Map<String, dynamic>;
+            if (u['password'] == password) {
+              _currentUser = username;
+              _role = u['role'] ?? 'user';
+            } else {
+              return false;
+            }
+          } else {
+            return false;
+          }
+        } catch (_) {
+          return false;
+        }
+      } else {
+        return false;
+      }
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('currentUser', _currentUser!);
     await prefs.setString('role', _role!);
     notifyListeners();
+    return true;
+  }
+
+  /// Register a new user and persist in SharedPreferences.
+  /// Returns true on success, false if username already exists or error.
+  Future<bool> registerUser({
+    required String username,
+    required String password,
+    required String name,
+    required String email,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final usersJson = prefs.getString('users');
+    Map<String, dynamic> users = {};
+    if (usersJson != null) {
+      try {
+        users = jsonDecode(usersJson) as Map<String, dynamic>;
+      } catch (_) {
+        users = {};
+      }
+    }
+    if (users.containsKey(username)) return false;
+    users[username] = {
+      'password': password,
+      'name': name,
+      'email': email,
+      'role': 'user',
+    };
+    await prefs.setString('users', jsonEncode(users));
     return true;
   }
 
@@ -76,6 +128,8 @@ class OrderProvider extends ChangeNotifier {
   }
 
   void updateStatus(String id, OrderStatus status) {
+    // Only allow status updates when logged in as admin
+    if (!isAdmin) return;
     _repo.updateStatus(id, status);
     notifyListeners();
   }

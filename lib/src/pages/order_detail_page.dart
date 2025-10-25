@@ -16,6 +16,8 @@ class OrderDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<OrderProvider>(context);
     final order = provider.getById(orderId);
+    // effective readOnly: page-level readOnly OR not an admin
+    final effectiveReadOnly = readOnly || !provider.isAdmin;
 
     if (order == null) {
       return Scaffold(body: Center(child: Text('Pesanan tidak ditemukan')));
@@ -46,14 +48,14 @@ class OrderDetailPage extends StatelessWidget {
                 return ChoiceChip(
                   label: Text(label),
                   selected: selected,
-                  onSelected: readOnly
+                  onSelected: effectiveReadOnly
                       ? null
                       : (_) => provider.updateStatus(order.id, s),
                 );
               }).toList(),
             ),
             const SizedBox(height: 20),
-            if (!readOnly)
+            if (!effectiveReadOnly)
               ElevatedButton(
                 onPressed: () {
                   provider.removeOrder(order.id);
