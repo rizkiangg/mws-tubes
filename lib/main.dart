@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'src/providers/order_provider.dart';
 import 'src/pages/order_list_page.dart';
 import 'src/pages/order_add_page.dart';
@@ -16,6 +17,11 @@ import 'src/pages/settings_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Hive and open boxes before creating providers that rely on them
+  await Hive.initFlutter();
+  await Hive.openBox('orders');
+  await Hive.openBox('prices');
+
   final orderProvider = OrderProvider();
   await orderProvider.restoreSession();
   runApp(MyApp.withProvider(orderProvider: orderProvider));
@@ -24,7 +30,10 @@ void main() async {
 class MyApp extends StatelessWidget {
   final OrderProvider? orderProvider;
   const MyApp({super.key}) : orderProvider = null;
-  const MyApp.withProvider({super.key, required OrderProvider this.orderProvider});
+  const MyApp.withProvider({
+    super.key,
+    required OrderProvider this.orderProvider,
+  });
 
   @override
   Widget build(BuildContext context) {

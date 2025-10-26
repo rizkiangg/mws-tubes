@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../providers/order_provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -93,56 +93,56 @@ class _RegisterPageState extends State<RegisterPage> {
                           if (_formKey.currentState?.validate() ?? false) {
                             _formKey.currentState?.save();
                             setState(() => _loading = true);
-                            // perform registration directly with SharedPreferences to avoid
-                            // using BuildContext across async gap
-                            final prefs = await SharedPreferences.getInstance();
-                            final usersJson = prefs.getString('users');
-                            Map<String, dynamic> users = {};
-                            if (usersJson != null) {
-                              try {
-                                users =
-                                    jsonDecode(usersJson)
-                                        as Map<String, dynamic>;
-                              } catch (_) {
-                                users = {};
-                              }
-                            }
-                            final uname = _username.trim();
-                            bool ok = false;
-                            if (!users.containsKey(uname)) {
-                              users[uname] = {
-                                'password': _password,
-                                'name': _name,
-                                'email': _email,
-                                'role': 'user',
-                              };
-                              await prefs.setString('users', jsonEncode(users));
-                              ok = true;
-                            }
+                            final prov = Provider.of<OrderProvider>(
+                              context,
+                              listen: false,
+                            );
+                            // Capture navigator and messenger before any awaits to avoid
+                            // using BuildContext after async gaps (fixes lint warnings).
+                            final navigator = Navigator.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            final ok = await prov.registerUser(
+                              username: _username.trim(),
+                              password: _password,
+                              name: _name,
+                              email: _email,
+                            );
                             setState(() => _loading = false);
                             if (!mounted) return;
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (ok) {
+                              // auto-login newly registered user
+                              final loggedIn = await prov.login(
+                                _username.trim(),
+                                _password,
+                              );
                               if (!mounted) return;
-                              if (ok) {
-                                ScaffoldMessenger.of(context).showSnackBar(
+                              if (loggedIn) {
+                                messenger.showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                      'Registrasi berhasil! Silakan login.',
+                                      'Registrasi berhasil! Anda telah otomatis login.',
                                     ),
                                   ),
                                 );
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  '/login',
-                                );
+                                navigator.pushReplacementNamed('/');
                               } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                messenger.showSnackBar(
                                   const SnackBar(
-                                    content: Text('Username sudah terpakai'),
+                                    content: Text(
+                                      'Registrasi berhasil, silakan login.',
+                                    ),
                                   ),
                                 );
+                                navigator.pushReplacementNamed('/login');
                               }
-                            });
+                            } else {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Username sudah terpakai'),
+                                ),
+                              );
+                            }
                           }
                         },
                         style: ElevatedButton.styleFrom(
