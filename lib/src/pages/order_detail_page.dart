@@ -20,51 +20,146 @@ class OrderDetailPage extends StatelessWidget {
     final effectiveReadOnly = readOnly || !provider.isAdmin;
 
     if (order == null) {
-      return Scaffold(body: Center(child: Text('Pesanan tidak ditemukan')));
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Info Pesanan'),
+          backgroundColor: const Color(0xFF0B57D0),
+        ),
+        body: const Center(child: Text('Pesanan tidak ditemukan')),
+      );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Info Pesanan')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Nama: ${order.title}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text('Deskripsi: ${order.description}'),
-            const SizedBox(height: 8),
-            Text('Harga: ${order.price.toStringAsFixed(0)}'),
-            const SizedBox(height: 16),
-            const Text('Status:'),
-            Wrap(
-              spacing: 8,
-              children: OrderStatus.values.map((s) {
-                final label = s.toString().split('.').last;
-                final selected = s == order.status;
-                return ChoiceChip(
-                  label: Text(label),
-                  selected: selected,
-                  onSelected: effectiveReadOnly
-                      ? null
-                      : (_) => provider.updateStatus(order.id, s),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-            if (!effectiveReadOnly)
-              ElevatedButton(
-                onPressed: () {
-                  provider.removeOrder(order.id);
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('Hapus Pesanan'),
+      appBar: AppBar(
+        title: const Text('Info Pesanan'),
+        backgroundColor: const Color(0xFF0B57D0),
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color.fromRGBO(0, 0, 0, 0.04),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      order.title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(order.description),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.attach_money,
+                          color: Color(0xFF0B57D0),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          order.price.toStringAsFixed(0),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Status',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: OrderStatus.values.map((s) {
+                        final label = s.toString().split('.').last;
+                        final selected = s == order.status;
+                        return ChoiceChip(
+                          label: Text(
+                            label,
+                            style: TextStyle(
+                              color: selected ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          selected: selected,
+                          selectedColor: const Color(0xFF0B57D0),
+                          backgroundColor: const Color(0xFFF6F8FB),
+                          onSelected: effectiveReadOnly
+                              ? null
+                              : (_) => provider.updateStatus(order.id, s),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
               ),
-          ],
+              const SizedBox(height: 20),
+              if (!effectiveReadOnly)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      // capture navigator before awaiting to avoid using BuildContext
+                      final navigator = Navigator.of(context);
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Konfirmasi'),
+                          content: const Text('Hapus pesanan ini?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('Batal'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text(
+                                'Hapus',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        provider.removeOrder(order.id);
+                        navigator.pop();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Hapus Pesanan'),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
