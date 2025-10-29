@@ -154,4 +154,8 @@ class OrderProvider extends ChangeNotifier {
   }
 
   double? getPriceByName(String? name) => _repo.getPriceByName(name);
+  String? getUnitByName(String? name) => _repo.getUnitByName(name);
+
+  double? getComputedPrice(String? name, double quantity) =>
+      _repo.computePrice(name, quantity);
 }

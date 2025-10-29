@@ -11,10 +11,20 @@ class OrderRepository {
     // ensure default prices exist
     final existing = _pricesBox.get('list');
     if (existing == null) {
+      // default price list with unit information
       final initial = [
-        {'name': 'Cuci Lipat', 'price': 15000.0},
-        {'name': 'Setrika', 'price': 8000.0},
-        {'name': 'Laundry Kiloan', 'price': 12000.0},
+        {'name': 'Setrika', 'price': 3500.0, 'unit': 'pcs'},
+        {'name': 'Cuci Setrika', 'price': 5000.0, 'unit': 'kg'},
+        {'name': 'Laundry Kiloan', 'price': 5000.0, 'unit': 'kg'},
+        {'name': 'Gorden Kecil', 'price': 10000.0, 'unit': 'pcs'},
+        {'name': 'Gorden Sedang-Besar', 'price': 15000.0, 'unit': 'pcs'},
+        {'name': 'Selimut Kecil', 'price': 10000.0, 'unit': 'pcs'},
+        {'name': 'Selimut Sedang', 'price': 15000.0, 'unit': 'pcs'},
+        {'name': 'Bed Cover Set', 'price': 20000.0, 'unit': 'pcs'},
+        {'name': 'Bed Cover Set Besar', 'price': 25000.0, 'unit': 'pcs'},
+        // keep a few common services
+        {'name': 'Cuci Lipat', 'price': 5000.0, 'unit': 'kg'},
+        {'name': 'Baby Care Laundry', 'price': 8000.0, 'unit': 'pcs'},
       ];
       _pricesBox.put('list', initial);
     }
@@ -111,6 +121,25 @@ class OrderRepository {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Return unit for the price entry (e.g., 'kg' or 'pcs') or null if unknown
+  String? getUnitByName(String? name) {
+    if (name == null) return null;
+    try {
+      final p = getPriceList().firstWhere((p) => p['name'] == name);
+      return (p['unit'] as String?) ?? 'pcs';
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Compute total price given a service name and quantity. For kg, quantity
+  /// can be decimal; for pcs, quantity is multiplied as integer/decimal.
+  double? computePrice(String? name, double quantity) {
+    final base = getPriceByName(name);
+    if (base == null) return null;
+    return base * (quantity <= 0 ? 1 : quantity);
   }
 
   // Helpers to map Order <-> Map for persistent storage without adapters

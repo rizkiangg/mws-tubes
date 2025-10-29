@@ -18,6 +18,7 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _qtyController = TextEditingController(text: '1');
 
   Widget _pickButton(BuildContext context, String label, IconData icon) {
     return OutlinedButton.icon(
@@ -81,7 +82,8 @@ class _HomePageState extends State<HomePage> {
     if (provider.isAdmin) {
       price = double.tryParse(_priceController.text) ?? 0;
     } else {
-      price = provider.getPriceByName(_selectedService) ?? 0;
+      final qty = double.tryParse(_qtyController.text) ?? 1.0;
+      price = provider.getComputedPrice(_selectedService, qty) ?? 0;
     }
     provider.addOrder(
       title: _titleController.text,
@@ -100,6 +102,7 @@ class _HomePageState extends State<HomePage> {
       _titleController.clear();
       _descController.clear();
       _priceController.clear();
+      _qtyController.text = '1';
     });
   }
 
@@ -244,10 +247,46 @@ class _HomePageState extends State<HomePage> {
                 decoration: const InputDecoration(labelText: 'Deskripsi'),
               ),
               const SizedBox(height: 8),
-              // Price: editable only for admin; users see price fetched from provider
+              // Quantity input for services that are per-kg or per-item
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _qtyController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(labelText: 'Jumlah'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Consumer<OrderProvider>(
+                    builder: (context, prov, _) {
+                      final unit = prov.getUnitByName(_selectedService) ?? '';
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(unit.isNotEmpty ? unit : '-'),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Price: editable only for admin; users see computed price based on qty and unit
               Consumer<OrderProvider>(
                 builder: (context, prov, _) {
-                  final price = prov.getPriceByName(_selectedService);
+                  final basePrice = prov.getPriceByName(_selectedService);
+                  final unit = prov.getUnitByName(_selectedService) ?? '';
+                  final qty = double.tryParse(_qtyController.text) ?? 1.0;
+                  final computed = prov.getComputedPrice(_selectedService, qty);
                   if (prov.isAdmin) {
                     return TextFormField(
                       controller: _priceController,
@@ -259,8 +298,8 @@ class _HomePageState extends State<HomePage> {
                     enabled: false,
                     decoration: InputDecoration(
                       labelText: 'Harga',
-                      hintText: price != null
-                          ? price.toStringAsFixed(0)
+                      hintText: computed != null
+                          ? '${computed.toStringAsFixed(0)} (${basePrice?.toStringAsFixed(0) ?? '-'} per ${unit.isNotEmpty ? unit : 'unit'})'
                           : 'Pilih layanan untuk melihat harga',
                     ),
                   );
