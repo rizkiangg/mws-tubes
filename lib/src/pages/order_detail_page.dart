@@ -74,9 +74,14 @@ class OrderDetailPage extends StatelessWidget {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.attach_money,
-                          color: Color(0xFF0B57D0),
+                        // show Indonesian Rupiah symbol
+                        Text(
+                          'Rp',
+                          style: TextStyle(
+                            color: const Color(0xFF0B57D0),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Text(
