@@ -26,36 +26,66 @@ class ProfilePage extends StatelessWidget {
                 );
               },
             ),
+
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: () {}, child: const Text('Edit Profil')),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => Navigator.pushNamed(
-                context,
-                '/orders',
-                arguments: {'readOnly': true},
+
+            // Edit profile button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // TODO: navigate to edit profile page when implemented
+                },
+                child: const Text('Edit Profil'),
               ),
-              child: const Text('Lihat Pesanan Saya'),
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/prices'),
-              child: const Text('Daftar Harga'),
+
+            const SizedBox(height: 8),
+
+            // View orders (read-only)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pushNamed(
+                  context,
+                  '/orders',
+                  arguments: {'readOnly': true},
+                ),
+                child: const Text('Lihat Pesanan Saya'),
+              ),
             ),
-            const SizedBox(height: 16),
-            const SizedBox.shrink(),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 8),
+
+            // Price list
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pushNamed(context, '/prices'),
+                child: const Text('Daftar Harga'),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Logout (full width, visible only when logged in)
             Consumer<OrderProvider>(
               builder: (context, prov, _) {
                 if (prov.currentUser == null) return const SizedBox.shrink();
-                return ElevatedButton(
-                  onPressed: () async {
-                    await prov.logout();
-                    if (!context.mounted) return;
-                    Navigator.pushReplacementNamed(context, '/login');
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text('Logout'),
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await prov.logout();
+                      if (!context.mounted) return;
+                      Navigator.pushReplacementNamed(context, '/login');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Logout'),
+                  ),
                 );
               },
             ),

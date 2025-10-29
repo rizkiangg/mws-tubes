@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/service_card.dart';
 import '../providers/order_provider.dart';
+import 'order_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -59,6 +60,7 @@ class _HomePageState extends State<HomePage> {
         side: const BorderSide(color: Color(0xFFE2E8F0)),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         alignment: Alignment.centerLeft,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
     );
   }
@@ -85,7 +87,7 @@ class _HomePageState extends State<HomePage> {
       final qty = double.tryParse(_qtyController.text) ?? 1.0;
       price = provider.getComputedPrice(_selectedService, qty) ?? 0;
     }
-    provider.addOrder(
+    final orderId = provider.addOrder(
       title: _titleController.text,
       description: _descController.text,
       price: price,
@@ -93,6 +95,11 @@ class _HomePageState extends State<HomePage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Pesanan dibuat')));
+    // navigate to detail page so user can see status and details
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => OrderDetailPage(orderId: orderId)),
+    );
     // clear form
     setState(() {
       _selectedService = null;
@@ -212,29 +219,38 @@ class _HomePageState extends State<HomePage> {
                 'Pesan Sekarang',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 10),
-              _pickButton(
-                context,
-                _selectedDate == null
-                    ? 'Pilih Tanggal Penjemputan'
-                    : 'Tanggal: ${_selectedDate!.toLocal().toString().split(' ')[0]}',
-                Icons.calendar_month,
+              const SizedBox(height: 10, width: double.infinity),
+              SizedBox(
+                width: double.infinity,
+                child: _pickButton(
+                  context,
+                  _selectedDate == null
+                      ? 'Pilih Tanggal Penjemputan'
+                      : 'Tanggal: ${_selectedDate!.toLocal().toString().split(' ')[0]}',
+                  Icons.calendar_month,
+                ),
               ),
-              const SizedBox(height: 8),
-              _pickButton(
-                context,
-                _selectedTime == null
-                    ? 'Pilih Waktu Penjemputan'
-                    : 'Waktu: ${_selectedTime!.format(context)}',
-                Icons.schedule,
+              const SizedBox(height: 8, width: double.infinity),
+              SizedBox(
+                width: double.infinity,
+                child: _pickButton(
+                  context,
+                  _selectedTime == null
+                      ? 'Pilih Waktu Penjemputan'
+                      : 'Waktu: ${_selectedTime!.format(context)}',
+                  Icons.schedule,
+                ),
               ),
-              const SizedBox(height: 8),
-              _pickButton(
-                context,
-                _location == null
-                    ? 'Masukkan Lokasi Penjemputan'
-                    : 'Lokasi: $_location',
-                Icons.place,
+              const SizedBox(height: 8, width: double.infinity),
+              SizedBox(
+                width: double.infinity,
+                child: _pickButton(
+                  context,
+                  _location == null
+                      ? 'Masukkan Lokasi Penjemputan'
+                      : 'Lokasi: $_location',
+                  Icons.place,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -247,23 +263,58 @@ class _HomePageState extends State<HomePage> {
                 decoration: const InputDecoration(labelText: 'Deskripsi'),
               ),
               const SizedBox(height: 8),
-              // Quantity input for services that are per-kg or per-item
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _qtyController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+              // Quantity: admin can set/override; users see the default quantity configured by admin and cannot edit
+              Consumer<OrderProvider>(
+                builder: (context, prov, _) {
+                  final unit = prov.getUnitByName(_selectedService) ?? '';
+                  final defaultQty =
+                      prov.getDefaultQuantity(_selectedService) ?? 1.0;
+                  if (prov.isAdmin) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _qtyController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'Jumlah',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(unit.isNotEmpty ? unit : '-'),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // user view: show default qty as read-only
+                  _qtyController.text = defaultQty.toString();
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _qtyController,
+                          enabled: false,
+                          decoration: const InputDecoration(
+                            labelText: 'Jumlah',
+                          ),
+                        ),
                       ),
-                      decoration: const InputDecoration(labelText: 'Jumlah'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Consumer<OrderProvider>(
-                    builder: (context, prov, _) {
-                      final unit = prov.getUnitByName(_selectedService) ?? '';
-                      return Container(
+                      const SizedBox(width: 12),
+                      Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 16,
@@ -274,10 +325,10 @@ class _HomePageState extends State<HomePage> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(unit.isNotEmpty ? unit : '-'),
-                      );
-                    },
-                  ),
-                ],
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 8),
               // Price: editable only for admin; users see computed price based on qty and unit
@@ -319,65 +370,102 @@ class _HomePageState extends State<HomePage> {
                   ),
                   child: const Text(
                     'Pesan Sekarang',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              // sample order summary card at bottom
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color.fromRGBO(0, 0, 0, 0.04),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.receipt_long, color: Color(0xFF0B57D0)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Pesanan #A001',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+              const SizedBox(height: 16),
+              const Text(
+                'Riwayat Pesanan',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Consumer<OrderProvider>(
+                builder: (context, prov, _) {
+                  final orders = prov.orders.reversed.toList();
+                  if (orders.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color.fromRGBO(0, 0, 0, 0.04),
+                            blurRadius: 8,
                           ),
-                          SizedBox(height: 6),
-                          Text('Sedang dicuci'),
                         ],
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pushNamed(
-                        context,
-                        '/detail',
-                        arguments: 'sample-id-001',
-                      ),
-                      style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFFE7F0FF),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                      child: const Text('Belum ada riwayat pesanan'),
+                    );
+                  }
+
+                  return Column(
+                    children: orders.map((o) {
+                      final statusLabel = o.status.toString().split('.').last;
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.receipt_long,
+                                color: Color(0xFF0B57D0),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Pesanan #${o.id}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(statusLabel),
+                                  ],
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          OrderDetailPage(orderId: o.id),
+                                    ),
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE7F0FF),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Lihat Detail',
+                                  style: TextStyle(color: Color(0xFF0B57D0)),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Lihat Detail',
-                        style: TextStyle(color: Color(0xFF0B57D0)),
-                      ),
-                    ),
-                  ],
-                ),
+                      );
+                    }).toList(),
+                  );
+                },
               ),
               const SizedBox(height: 60),
             ],

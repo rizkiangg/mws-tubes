@@ -24,7 +24,7 @@ class _PriceListPageState extends State<PriceListPage> {
           return ListTile(
             title: Text(p['name']),
             subtitle: Text(
-              'Rp ${(p['price'] as num).toDouble().toStringAsFixed(0)}',
+              'Rp ${(p['price'] as num).toDouble().toStringAsFixed(0)} • Jumlah: ${(p['default_qty'] ?? 1).toString()} ${(p['unit'] ?? '')}',
             ),
             trailing: provider.isAdmin
                 ? Row(
@@ -39,47 +39,103 @@ class _PriceListPageState extends State<PriceListPage> {
                           final priceController = TextEditingController(
                             text: (p['price'] as num).toString(),
                           );
+                          final unitInitial = (p['unit'] as String?) ?? 'pcs';
+                          final defaultQtyController = TextEditingController(
+                            text: (p['default_qty'] ?? 1).toString(),
+                          );
                           final messenger = ScaffoldMessenger.of(context);
                           final res = await showDialog<bool?>(
                             context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Edit Harga'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  TextField(
-                                    controller: nameController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Nama',
+                            builder: (ctx) {
+                              String unitValue = unitInitial;
+                              return StatefulBuilder(
+                                builder: (ctx2, setState2) {
+                                  return AlertDialog(
+                                    title: const Text('Edit Harga'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        TextField(
+                                          controller: nameController,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Nama',
+                                          ),
+                                        ),
+                                        TextField(
+                                          controller: priceController,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Harga',
+                                          ),
+                                          keyboardType: TextInputType.number,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        DropdownButtonFormField<String>(
+                                          initialValue: unitValue,
+                                          items: const [
+                                            DropdownMenuItem(
+                                              value: 'pcs',
+                                              child: Text('pcs'),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: 'kg',
+                                              child: Text('kg'),
+                                            ),
+                                          ],
+                                          onChanged: (v) => setState2(
+                                            () => unitValue = v ?? 'pcs',
+                                          ),
+                                          decoration: const InputDecoration(
+                                            labelText: 'Unit',
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        TextField(
+                                          controller: defaultQtyController,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Default Jumlah',
+                                          ),
+                                          keyboardType:
+                                              TextInputType.numberWithOptions(
+                                                decimal: true,
+                                              ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  TextField(
-                                    controller: priceController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Harga',
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                  ),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Batal'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    final newName = nameController.text.trim();
-                                    final newPrice =
-                                        double.tryParse(priceController.text) ??
-                                        0;
-                                    provider.updatePrice(newName, newPrice);
-                                    Navigator.pop(ctx, true);
-                                  },
-                                  child: const Text('Simpan'),
-                                ),
-                              ],
-                            ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, false),
+                                        child: const Text('Batal'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          final newName = nameController.text
+                                              .trim();
+                                          final newPrice =
+                                              double.tryParse(
+                                                priceController.text,
+                                              ) ??
+                                              0;
+                                          final newQty =
+                                              double.tryParse(
+                                                defaultQtyController.text,
+                                              ) ??
+                                              1.0;
+                                          provider.updatePrice(
+                                            newName,
+                                            newPrice,
+                                            unit: unitValue,
+                                            defaultQty: newQty,
+                                          );
+                                          Navigator.pop(ctx, true);
+                                        },
+                                        child: const Text('Simpan'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
                           );
                           if (!mounted) return;
                           if (res == true) {
@@ -115,39 +171,92 @@ class _PriceListPageState extends State<PriceListPage> {
                 final priceController = TextEditingController();
                 final res = await showDialog<bool?>(
                   context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Tambah Harga'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextField(
-                          controller: nameController,
-                          decoration: const InputDecoration(labelText: 'Nama'),
-                        ),
-                        TextField(
-                          controller: priceController,
-                          decoration: const InputDecoration(labelText: 'Harga'),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Batal'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          final name = nameController.text.trim();
-                          final price =
-                              double.tryParse(priceController.text) ?? 0;
-                          provider.addPrice(name, price);
-                          Navigator.pop(ctx, true);
-                        },
-                        child: const Text('Tambah'),
-                      ),
-                    ],
-                  ),
+                  builder: (ctx) {
+                    String unitValue = 'pcs';
+                    final defaultQtyController = TextEditingController(
+                      text: '1',
+                    );
+                    return StatefulBuilder(
+                      builder: (ctx2, setState2) {
+                        return AlertDialog(
+                          title: const Text('Tambah Harga'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(
+                                controller: nameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nama',
+                                ),
+                              ),
+                              TextField(
+                                controller: priceController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Harga',
+                                ),
+                                keyboardType: TextInputType.number,
+                              ),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<String>(
+                                initialValue: unitValue,
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'pcs',
+                                    child: Text('pcs'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'kg',
+                                    child: Text('kg'),
+                                  ),
+                                ],
+                                onChanged: (v) =>
+                                    setState2(() => unitValue = v ?? 'pcs'),
+                                decoration: const InputDecoration(
+                                  labelText: 'Unit',
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: defaultQtyController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Default Jumlah',
+                                ),
+                                keyboardType: TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Batal'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                final name = nameController.text.trim();
+                                final price =
+                                    double.tryParse(priceController.text) ?? 0;
+                                final defaultQty =
+                                    double.tryParse(
+                                      defaultQtyController.text,
+                                    ) ??
+                                    1.0;
+                                provider.addPrice(
+                                  name,
+                                  price,
+                                  unit: unitValue,
+                                  defaultQty: defaultQty,
+                                );
+                                Navigator.pop(ctx, true);
+                              },
+                              child: const Text('Tambah'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
                 );
                 if (!mounted) return;
                 if (res == true) {

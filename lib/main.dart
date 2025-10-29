@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Tugas Besar',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0B57D0),),
           useMaterial3: true,
         ),
         initialRoute: providerValue.currentUser == null ? '/login' : '/',

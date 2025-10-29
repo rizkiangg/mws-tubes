@@ -107,7 +107,8 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  void addOrder({
+  /// Create a new order and return its id.
+  String addOrder({
     required String title,
     required String description,
     required double price,
@@ -120,6 +121,7 @@ class OrderProvider extends ChangeNotifier {
     );
     _repo.add(order);
     notifyListeners();
+    return order.id;
   }
 
   void removeOrder(String id) {
@@ -137,14 +139,23 @@ class OrderProvider extends ChangeNotifier {
   Order? getById(String id) => _repo.getById(id);
 
   List<Map<String, dynamic>> getPriceList() => _repo.getPriceList();
-
-  void addPrice(String name, double price) {
-    _repo.addPrice(name, price);
+  void addPrice(
+    String name,
+    double price, {
+    String unit = 'pcs',
+    double defaultQty = 1.0,
+  }) {
+    _repo.addPrice(name, price, unit: unit, defaultQty: defaultQty);
     notifyListeners();
   }
 
-  void updatePrice(String name, double price) {
-    _repo.updatePrice(name, price);
+  void updatePrice(
+    String name,
+    double price, {
+    String? unit,
+    double? defaultQty,
+  }) {
+    _repo.updatePrice(name, price, unit: unit, defaultQty: defaultQty);
     notifyListeners();
   }
 
@@ -154,6 +165,7 @@ class OrderProvider extends ChangeNotifier {
   }
 
   double? getPriceByName(String? name) => _repo.getPriceByName(name);
+  double? getDefaultQuantity(String? name) => _repo.getDefaultQuantity(name);
   String? getUnitByName(String? name) => _repo.getUnitByName(name);
 
   double? getComputedPrice(String? name, double quantity) =>
