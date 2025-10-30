@@ -24,7 +24,13 @@ class AdminDashboardPage extends StatelessWidget {
     final selesai = orders.where((o) => o.status == OrderStatus.selesai).length;
     final totalRevenue = orders.fold<double>(0.0, (s, o) => s + (o.price));
 
-    final recent = orders.reversed.take(6).toList();
+    // show only active (non-selesai) recent orders on the dashboard
+    final recent = orders
+        .where((o) => o.status != OrderStatus.selesai)
+        .toList()
+        .reversed
+        .take(6)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -42,7 +48,8 @@ class AdminDashboardPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _StatCard(
-                      label: 'Total Pesanan',
+                        label: 'Total Pesanan',
+                        // color: Colors.white,
                       value: '$totalOrders',
                     ),
                   ),
@@ -51,6 +58,7 @@ class AdminDashboardPage extends StatelessWidget {
                     child: _StatCard(
                       label: 'Pendapatan',
                       value: 'Rp ${totalRevenue.toStringAsFixed(0)}',
+                      
                     ),
                   ),
                 ],
@@ -89,91 +97,121 @@ class AdminDashboardPage extends StatelessWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              ...recent.map(
-                (o) => Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  child: ListTile(
-                    title: Text(o.title),
-                    subtitle: Text(
-                      'Rp ${o.price.toStringAsFixed(0)} • ${o.description}',
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (v) async {
-                        if (v == 'view') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => OrderDetailPage(orderId: o.id),
-                            ),
-                          );
-                        } else if (v == 'delete') {
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Konfirmasi'),
-                              content: const Text('Hapus pesanan ini?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Batal'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text(
-                                    'Hapus',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirmed == true) {
-                            prov.removeOrder(o.id);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Pesanan dihapus'),
-                                ),
-                              );
-                            }
-                          }
-                        } else if (v.startsWith('status:')) {
-                          final s = v.split(':').last;
-                          OrderStatus st = OrderStatus.menunggu;
-                          if (s == 'diproses') st = OrderStatus.diproses;
-                          if (s == 'selesai') st = OrderStatus.selesai;
-                          prov.updateStatus(o.id, st);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: 'view',
-                          child: Text('Lihat Detail'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'status:menunggu',
-                          child: Text('Set Menunggu'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'status:diproses',
-                          child: Text('Set Diproses'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'status:selesai',
-                          child: Text('Set Selesai'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            'Hapus',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
+              if (recent.isEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 24,
+                    horizontal: 12,
+                  ),
+                  margin: const EdgeInsets.only(top: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.04),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'tidak ada pesanan yang sedang aktif',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ] else ...[
+                ...recent.map(
+                  (o) => Card(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    child: ListTile(
+                      title: Text(o.title),
+                      subtitle: Text(
+                        'Rp ${o.price.toStringAsFixed(0)} • ${o.description}',
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (v) async {
+                          if (v == 'view') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => OrderDetailPage(orderId: o.id),
+                              ),
+                            );
+                          } else if (v == 'delete') {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Konfirmasi'),
+                                content: const Text('Hapus pesanan ini?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Batal'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text(
+                                      'Hapus',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true) {
+                              prov.removeOrder(o.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Pesanan dihapus'),
+                                  ),
+                                );
+                              }
+                            }
+                          } else if (v.startsWith('status:')) {
+                            final s = v.split(':').last;
+                            OrderStatus st = OrderStatus.menunggu;
+                            if (s == 'diproses') st = OrderStatus.diproses;
+                            if (s == 'selesai') st = OrderStatus.selesai;
+                            prov.updateStatus(o.id, st);
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'view',
+                            child: Text('Lihat Detail'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'status:menunggu',
+                            child: Text('Set Menunggu'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'status:diproses',
+                            child: Text('Set Diproses'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'status:selesai',
+                            child: Text('Set Selesai'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Text(
+                              'Hapus',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -195,19 +233,19 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // compute a readable background and foreground from the base color
+
     final base = color ?? const Color(0xFF0B57D0);
-    // use a faint background by applying opacity to the base color
-    // avoid using withOpacity (may trigger precision-deprecation in some SDKs)
+
     final int alpha = (0.12 * 255).round();
-    // compose ARGB using the component accessors to avoid deprecated APIs
+
     final int r = (base.r * 255).round() & 0xFF;
     final int g = (base.g * 255).round() & 0xFF;
     final int b = (base.b * 255).round() & 0xFF;
     final bg = Color.fromARGB(alpha, r, g, b);
-    // pick a foreground (text) color that contrasts with the base
+
+    // final fg = Colors.black;
     final fg = ThemeData.estimateBrightnessForColor(base) == Brightness.dark
-        ? Colors.white
+        ? const Color.fromARGB(255, 94, 94, 94)
         : Colors.black;
     return Container(
       padding: const EdgeInsets.all(12),

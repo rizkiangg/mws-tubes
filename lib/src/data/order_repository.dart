@@ -6,6 +6,7 @@ class OrderRepository {
   // Note: boxes are opened in main.dart before the repository/provider is created
   Box get _ordersBox => Hive.box('orders');
   Box get _pricesBox => Hive.box('prices');
+  Box get _historyBox => Hive.box('history');
 
   OrderRepository() {
     // ensure default prices exist
@@ -96,13 +97,26 @@ class OrderRepository {
   }
 
   Order? getById(String id) {
+    // try orders box first
     final v = _ordersBox.get(id);
-    if (v == null) return null;
-    try {
-      return _orderFromMap(Map<String, dynamic>.from(v as Map));
-    } catch (_) {
-      return null;
+    if (v != null) {
+      try {
+        return _orderFromMap(Map<String, dynamic>.from(v as Map));
+      } catch (_) {
+        // continue to check history
+      }
     }
+
+    // fallback to history box
+    final hv = _historyBox.get(id);
+    if (hv != null) {
+      try {
+        return _orderFromMap(Map<String, dynamic>.from(hv as Map));
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   void add(Order order) {
@@ -115,8 +129,38 @@ class OrderRepository {
     final o = getById(id);
     if (o != null) {
       o.status = status;
-      _ordersBox.put(id, _orderToMap(o));
+      if (status == OrderStatus.selesai) {
+        // move to history: write into history box and remove from orders
+        try {
+          final map = _orderToMap(o);
+          map['completedAt'] = DateTime.now().toIso8601String();
+          _historyBox.put(id, map);
+          _ordersBox.delete(id);
+        } catch (_) {
+          // if history write fails, fallback to updating orders box
+          _ordersBox.put(id, _orderToMap(o));
+        }
+      } else {
+        // normal status update remains in orders box
+        _ordersBox.put(id, _orderToMap(o));
+      }
     }
+  }
+
+  /// Return historical (completed) orders saved in 'history' box
+  List<Order> getHistory() {
+    final values = _historyBox.values;
+    return values
+        .map((e) {
+          try {
+            final Map<String, dynamic> m = Map<String, dynamic>.from(e as Map);
+            return _orderFromMap(m);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<Order>()
+        .toList(growable: false);
   }
 
   // Price list operations

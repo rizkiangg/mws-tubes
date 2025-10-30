@@ -21,6 +21,7 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox('orders');
   await Hive.openBox('prices');
+  await Hive.openBox('history');
 
   final orderProvider = OrderProvider();
   await orderProvider.restoreSession();
@@ -43,7 +44,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Tugas Besar',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0B57D0),),
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0B57D0)),
           useMaterial3: true,
         ),
         initialRoute: providerValue.currentUser == null ? '/login' : '/',

@@ -136,6 +136,9 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Return completed orders history
+  List<Order> get history => _repo.getHistory();
+
   Order? getById(String id) => _repo.getById(id);
 
   List<Map<String, dynamic>> getPriceList() => _repo.getPriceList();

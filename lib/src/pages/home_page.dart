@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../widgets/service_card.dart';
 import '../providers/order_provider.dart';
+import '../models/order.dart';
 import 'order_detail_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -16,10 +18,20 @@ class _HomePageState extends State<HomePage> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   String? _location;
+
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _qtyController = TextEditingController(text: '1');
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    _priceController.dispose();
+    _qtyController.dispose();
+    super.dispose();
+  }
 
   Widget _pickButton(BuildContext context, String label, IconData icon) {
     return OutlinedButton.icon(
@@ -39,7 +51,6 @@ class _HomePageState extends State<HomePage> {
           );
           if (t != null) setState(() => _selectedTime = t);
         } else {
-          // simple location dialog
           final loc = await showDialog<String>(
             context: context,
             builder: (ctx) => AlertDialog(
@@ -92,15 +103,16 @@ class _HomePageState extends State<HomePage> {
       description: _descController.text,
       price: price,
     );
+
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Pesanan dibuat')));
-    // navigate to detail page so user can see status and details
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => OrderDetailPage(orderId: orderId)),
     );
-    // clear form
+
     setState(() {
       _selectedService = null;
       _selectedDate = null;
@@ -219,7 +231,8 @@ class _HomePageState extends State<HomePage> {
                 'Pesan Sekarang',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 10, width: double.infinity),
+              const SizedBox(height: 10),
+
               SizedBox(
                 width: double.infinity,
                 child: _pickButton(
@@ -230,7 +243,7 @@ class _HomePageState extends State<HomePage> {
                   Icons.calendar_month,
                 ),
               ),
-              const SizedBox(height: 8, width: double.infinity),
+              const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: _pickButton(
@@ -241,7 +254,7 @@ class _HomePageState extends State<HomePage> {
                   Icons.schedule,
                 ),
               ),
-              const SizedBox(height: 8, width: double.infinity),
+              const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: _pickButton(
@@ -263,6 +276,7 @@ class _HomePageState extends State<HomePage> {
                 decoration: const InputDecoration(labelText: 'Deskripsi'),
               ),
               const SizedBox(height: 8),
+
               // Quantity: admin can set/override; users see the default quantity configured by admin and cannot edit
               Consumer<OrderProvider>(
                 builder: (context, prov, _) {
@@ -331,6 +345,7 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
               const SizedBox(height: 8),
+
               // Price: editable only for admin; users see computed price based on qty and unit
               Consumer<OrderProvider>(
                 builder: (context, prov, _) {
@@ -350,7 +365,7 @@ class _HomePageState extends State<HomePage> {
                     decoration: InputDecoration(
                       labelText: 'Harga',
                       hintText: computed != null
-                          ? '${computed.toStringAsFixed(0)} (${basePrice?.toStringAsFixed(0) ?? '-'} per ${unit.isNotEmpty ? unit : 'unit'})'
+                          ? 'Rp ${computed.toStringAsFixed(0)} (${basePrice?.toStringAsFixed(0) ?? '-'} per ${unit.isNotEmpty ? unit : 'unit'})'
                           : 'Pilih layanan untuk melihat harga',
                     ),
                   );
@@ -375,19 +390,23 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 16),
-              const SizedBox(height: 16),
-              const Text(
-                'Riwayat Pesanan',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
+
+              // Active + History sections
               Consumer<OrderProvider>(
                 builder: (context, prov, _) {
-                  final orders = prov.orders.reversed.toList();
-                  if (orders.isEmpty) {
-                    return Container(
+                  final all = prov.orders;
+                  final active = all
+                      .where((o) => o.status != OrderStatus.selesai)
+                      .toList()
+                      .reversed
+                      .toList();
+                  final history = all.reversed.toList();
+
+                  Widget activeSection;
+                  if (active.isEmpty) {
+                    activeSection = Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
@@ -398,72 +417,184 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
-                      child: const Text('Belum ada riwayat pesanan'),
+                      child: const Center(
+                        child: Text('Tidak ada pesanan saat ini'),
+                      ),
+                    );
+                  } else {
+                    activeSection = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Pesanan Aktif',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...active.map(
+                          (o) => Card(
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.receipt_long,
+                                    color: Color(0xFF0B57D0),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Pesanan #${o.id}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          o.status.toString().split('.').last,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            OrderDetailPage(orderId: o.id),
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: const Color(0xFFE7F0FF),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Lihat Detail',
+                                      style: TextStyle(
+                                        color: Color(0xFF0B57D0),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     );
                   }
 
-                  return Column(
-                    children: orders.map((o) {
-                      final statusLabel = o.status.toString().split('.').last;
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                  Widget historySection;
+                  if (history.isEmpty) {
+                    historySection = const SizedBox.shrink();
+                  } else {
+                    historySection = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Riwayat Pesanan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.receipt_long,
-                                color: Color(0xFF0B57D0),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Pesanan #${o.id}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(statusLabel),
-                                  ],
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          OrderDetailPage(orderId: o.id),
-                                    ),
-                                  );
-                                },
-                                style: TextButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE7F0FF),
+                        ),
+                        const SizedBox(height: 8),
+                        ...history
+                            .take(3)
+                            .map(
+                              (o) => Card(
+                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                child: Padding(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 8,
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.receipt_long,
+                                        color: Color(0xFF0B57D0),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Pesanan #${o.id}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              o.status
+                                                  .toString()
+                                                  .split('.')
+                                                  .last,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                OrderDetailPage(orderId: o.id),
+                                          ),
+                                        ),
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFFE7F0FF,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Lihat Detail',
+                                          style: TextStyle(
+                                            color: Color(0xFF0B57D0),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: const Text(
-                                  'Lihat Detail',
-                                  style: TextStyle(color: Color(0xFF0B57D0)),
-                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                            ),
+                      ],
+                    );
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [activeSection, historySection],
                   );
                 },
               ),
