@@ -33,7 +33,9 @@ class _RootPageState extends State<RootPage> {
     final pages = isAdmin
         ? <Widget>[
             const AdminDashboardPage(),
-            const OrderListPage(),
+            const OrderHistoryPage(),
+
+            // const OrderListPage(),
             const PriceListPage(),
             const ProfilePage(),
           ]

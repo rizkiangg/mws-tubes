@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'mws-tubes.firebasestorage.app',
     measurementId: 'G-RGFYC6N7W7',
   );
+
 }

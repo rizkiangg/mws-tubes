@@ -121,48 +121,7 @@ class OrderDetailPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              if (!effectiveReadOnly)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      // capture navigator before awaiting to avoid using BuildContext
-                      final navigator = Navigator.of(context);
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Konfirmasi'),
-                          content: const Text('Hapus pesanan ini?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text('Batal'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text(
-                                'Hapus',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm == true) {
-                        provider.removeOrder(order.id);
-                        navigator.pop();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Hapus Pesanan'),
-                  ),
-                ),
+              // Orders are permanent and cannot be deleted from the UI.
             ],
           ),
         ),

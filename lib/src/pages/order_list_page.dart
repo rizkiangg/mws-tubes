@@ -37,12 +37,7 @@ class OrderListPage extends StatelessWidget {
                   subtitle: Text(
                     '${o.price.toStringAsFixed(0)} - ${o.status.name}',
                   ),
-                  trailing: (provider.isAdmin && !readOnly)
-                      ? IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () => provider.removeOrder(o.id),
-                        )
-                      : null,
+                  trailing: null,
                   onTap: () =>
                       Navigator.pushNamed(context, '/detail', arguments: o.id),
                 );
