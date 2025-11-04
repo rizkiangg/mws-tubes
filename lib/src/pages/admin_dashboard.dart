@@ -139,8 +139,18 @@ class AdminDashboardPage extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     child: ListTile(
                       title: Text(o.title),
-                      subtitle: Text(
-                        'Rp ${o.price.toStringAsFixed(0)} • ${o.description}',
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Rp ${o.price.toStringAsFixed(0)} • ${o.description}',
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Owner: ${o.owner ?? '-'}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
                       ),
                       trailing: PopupMenuButton<String>(
                         onSelected: (v) async {

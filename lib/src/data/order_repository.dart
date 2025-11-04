@@ -277,6 +277,8 @@ class OrderRepository {
     'status': o.status.name,
     // include owner when present
     if (o.owner != null) 'owner': o.owner,
+    // include completedAt when present
+    if (o.completedAt != null) 'completedAt': o.completedAt!.toIso8601String(),
   };
 
   Order _orderFromMap(Map<String, dynamic> m) => Order(
@@ -286,6 +288,9 @@ class OrderRepository {
     price: (m['price'] as num).toDouble(),
     status: _statusFromString(m['status'] as String?),
     owner: m.containsKey('owner') ? (m['owner'] as String?) : null,
+    completedAt: m.containsKey('completedAt')
+        ? DateTime.tryParse(m['completedAt'] as String)
+        : null,
   );
 
   OrderStatus _statusFromString(String? s) {

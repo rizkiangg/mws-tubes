@@ -9,6 +9,8 @@ class Order {
   // owner: username or id of the user who created the order.
   // nullable for backwards compatibility with older saved orders.
   final String? owner;
+  // completedAt: timestamp when the order was marked completed and moved to history
+  final DateTime? completedAt;
 
   Order({
     required this.id,
@@ -17,5 +19,6 @@ class Order {
     required this.price,
     this.status = OrderStatus.menunggu,
     this.owner,
+    this.completedAt,
   });
 }

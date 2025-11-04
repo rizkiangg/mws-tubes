@@ -21,6 +21,12 @@ class OrderHistoryPage extends StatelessWidget {
               itemCount: history.length,
               itemBuilder: (context, i) {
                 final o = history[i];
+                String completedLabel = '';
+                if (o.completedAt != null) {
+                  completedLabel =
+                      'Selesai: ${o.completedAt!.toLocal().toString().split('.')[0]}';
+                }
+
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   child: ListTile(
@@ -29,8 +35,18 @@ class OrderHistoryPage extends StatelessWidget {
                       color: Color(0xFF0B57D0),
                     ),
                     title: Text('Pesanan #${o.id} - ${o.title}'),
-                    subtitle: Text(
-                      'Status: ${o.status.toString().split('.').last}',
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Status: ${o.status.toString().split('.').last}'),
+                        if (completedLabel.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            completedLabel,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ],
                     ),
                     trailing: TextButton(
                       onPressed: () => Navigator.pushNamed(

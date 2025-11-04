@@ -43,10 +43,12 @@ class OrderListPage extends StatelessWidget {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/add'),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: readOnly
+          ? null
+          : FloatingActionButton(
+              onPressed: () => Navigator.pushNamed(context, '/add'),
+              child: const Icon(Icons.add),
+            ),
     );
   }
 }
