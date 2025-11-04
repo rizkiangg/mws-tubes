@@ -6,7 +6,13 @@ import '../models/order.dart';
 
 class OrderProvider extends ChangeNotifier {
   final OrderRepository _repo = OrderRepository();
-  List<Order> get orders => _repo.getAll();
+  List<Order> get orders {
+    final all = _repo.getAll();
+    if (isAdmin) return all;
+    // non-admin: return only orders owned by current user
+    if (_currentUser == null) return <Order>[];
+    return all.where((o) => o.owner == _currentUser).toList(growable: false);
+  }
 
   // Authentication/session state
   String? _currentUser;
@@ -118,6 +124,8 @@ class OrderProvider extends ChangeNotifier {
       title: title,
       description: description,
       price: price,
+      // attach owner if available
+      owner: _currentUser,
     );
     _repo.add(order);
     notifyListeners();
@@ -137,7 +145,12 @@ class OrderProvider extends ChangeNotifier {
   }
 
   /// Return completed orders history
-  List<Order> get history => _repo.getHistory();
+  List<Order> get history {
+    final all = _repo.getHistory();
+    if (isAdmin) return all;
+    if (_currentUser == null) return <Order>[];
+    return all.where((o) => o.owner == _currentUser).toList(growable: false);
+  }
 
   Order? getById(String id) => _repo.getById(id);
 

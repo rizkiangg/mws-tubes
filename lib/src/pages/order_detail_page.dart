@@ -19,13 +19,17 @@ class OrderDetailPage extends StatelessWidget {
     // effective readOnly: page-level readOnly OR not an admin
     final effectiveReadOnly = readOnly || !provider.isAdmin;
 
-    if (order == null) {
+    // Authorization: non-admin users may only view their own orders
+    if (order == null ||
+        (!provider.isAdmin && order.owner != provider.currentUser)) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Info Pesanan'),
           backgroundColor: const Color(0xFF0B57D0),
         ),
-        body: const Center(child: Text('Pesanan tidak ditemukan')),
+        body: const Center(
+          child: Text('Pesanan tidak ditemukan atau akses ditolak'),
+        ),
       );
     }
 

@@ -275,6 +275,8 @@ class OrderRepository {
     'description': o.description,
     'price': o.price,
     'status': o.status.name,
+    // include owner when present
+    if (o.owner != null) 'owner': o.owner,
   };
 
   Order _orderFromMap(Map<String, dynamic> m) => Order(
@@ -283,6 +285,7 @@ class OrderRepository {
     description: m['description'] as String,
     price: (m['price'] as num).toDouble(),
     status: _statusFromString(m['status'] as String?),
+    owner: m.containsKey('owner') ? (m['owner'] as String?) : null,
   );
 
   OrderStatus _statusFromString(String? s) {
