@@ -39,6 +39,14 @@ class OrderHistoryPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Status: ${o.status.toString().split('.').last}'),
+                        if (prov.isAdmin &&
+                            (o.owner != null && o.owner!.isNotEmpty)) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Pemesan: ${o.owner}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
                         if (completedLabel.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(

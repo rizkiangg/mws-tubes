@@ -75,6 +75,25 @@ class OrderDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(order.description),
+                    const SizedBox(height: 8),
+                    // owner label (visible to admin and to the owner)
+                    Text(
+                      'Pemesan: ${order.owner ?? '-'}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    if (order.completedAt != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Selesai: ${order.completedAt!.toLocal().toString().split('.')[0]}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     Row(
                       children: [
