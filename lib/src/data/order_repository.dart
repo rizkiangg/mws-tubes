@@ -278,7 +278,7 @@ class OrderRepository {
     // include owner when present
     if (o.owner != null) 'owner': o.owner,
     // include completedAt when present
-    if (o.completedAt != null) 'completedAt': o.completedAt!.toIso8601String(),
+    if (o.completedAt != null) 'completedAt':  o.completedAt!.toIso8601String(),
   };
 
   Order _orderFromMap(Map<String, dynamic> m) => Order(

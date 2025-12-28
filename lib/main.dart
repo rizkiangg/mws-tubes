@@ -14,6 +14,7 @@ import 'src/pages/order_history_page.dart';
 import 'src/pages/order_status_page.dart';
 import 'src/pages/profile_page.dart';
 import 'src/pages/settings_page.dart';
+import 'src/services/hive_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +23,9 @@ void main() async {
   await Hive.openBox('orders');
   await Hive.openBox('prices');
   await Hive.openBox('history');
+
+  // Inisialisasi Hive dan buat admin user
+  await initializeHiveAndSeedAdmin();
 
   final orderProvider = OrderProvider();
   await orderProvider.restoreSession();
